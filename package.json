@@ -6,11 +6,9 @@
         "node.js",
         "NodeJS",
         "typescript",
-        "currencies",
-        "conversion",
-        "ECB",
-        "currency",
-        "convert"
+        "express",
+        "starter",
+        "mocha"    
     ],
     "author": "Fullstack Concepts, Paul",
     "homepage": "",
