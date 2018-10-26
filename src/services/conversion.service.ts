@@ -93,32 +93,12 @@ export class ConversionService {
          */
       } else {
 
-        /***
-         * Scenario II A: Base currency is euro
-         */
-        if (c === 'eur' || c === 'euro') {
-          raw = cAmount * cRate.to;
-
-          /***
-           * Scenario II B: Base currency is euro
-           */
-        } else if (fC === 'eur' || fC === 'euro') {
-          raw = cAmount * cRate.to;
-
-          /***
-           * Scenario II C: Base currency <> euro
-           */
-        } else {
-          raw = cAmount * cRate.to;
-        }
-
-        result = makeDecimal(raw, 2);
+          raw = cAmount * cRate.to;    
+          result = makeDecimal(raw, 2);
       }
 
       // correction for xtreme currency conversions
       if (result < 0.01) result = 0.01;
-
-      console.log('==> Final Result ', cAmount, ' => ', raw, result);
 
       responseObject = {
         base_currency: c.toUpperCase(),
