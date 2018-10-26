@@ -14,7 +14,7 @@ http://:host:port/api/convert/:currency/:foreign_currency/:amount
 **euro to usd**
 
 ```bash
-http://localhost:3000/eur/usd/10.2
+http://localhost:3000/api/convert/eur/usd/10.2
 ````
 
 **response**
@@ -33,7 +33,7 @@ usd->eur	0.8659508139937652
 **usd to eur**
 
 ```bash
-http://localhost:3000/eur/usd/10.2
+http://localhost:3000/api/convert/eur/usd/10.2
 ````
 
 **response**
