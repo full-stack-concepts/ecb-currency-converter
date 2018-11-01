@@ -31,14 +31,20 @@ export const PORT = process.env['PORT'];
 /***
  * Conversion Rates
  */
-export const CSV_SOURCE_DIRECTORY = process.env['CSV_SOURCE_DIRECTORY'];
+export const STORE_SOURCE_DIRECTORY = process.env['STORE_SOURCE_DIRECTORY'];
 export const CSV_SOURCE_FILE = process.env['CSV_SOURCE_FILE'];
 export const ONLINE_XML_SOURCE = process.env['ONLINE_XML_SOURCE'];
+export const ONLINE_XML_LAST_90_DAYS = process.env["ONLINE_XML_LAST_90_DAYS"];
 
 /***
- * Data Refresh Rates
+ * Generic Load Settings
  */
-export const ECB_DATA_REFRESH_RATE = parseInt(process.env['ECB_DATA_REFRESH_RATE']);
+export const MY_TIME_ZONE = process.env['MY_TIME_ZONE'];
+export const ECB_TIME_ZONE = process.env['ECB_TIME_ZONE'];
+export const DATE_FORMAT = process.env['DATE_FORMAT'];
+export const RELOAD_RANGE = parseInt(process.env['RELOAD_RANGE']);
+export const RELOAD_HOURS = parseInt(process.env['RELOAD_HOURS']);
+export const RELOAD_MINUTES = parseInt(process.env['RELOAD_MINUTES']);
 
 /***
  * Checks before bootstrapping application
@@ -50,7 +56,7 @@ if (!EXPRESS_SERVER_MODE) {
   process.exit(1);
 }
 
-const dir: string = CSV_SOURCE_DIRECTORY;
+const dir: string = STORE_SOURCE_DIRECTORY;
 const file: string = CSV_SOURCE_FILE;
 if (!dir || !isString(dir) || !file || !isString(file)) {
   console.error('Critical error: Conversion Rates environment settings are not configured.');

@@ -1,1 +1,1 @@
-export { IRate } from 'rate.interface';
+export { IConversionTable } from 'conversion.interface';

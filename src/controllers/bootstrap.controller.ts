@@ -1,30 +1,31 @@
 import { DataController } from './data.controller';
 import { currencyStore } from '../store/currency.store';
+import { historyStore } from '../store/history.store';
 
 export class BootstrapController {
-  /***
-   * Bootstrap Sequence
-   */
-  async init() {
-    // retrieve rates from ECB
-    const data = await DataController.getData();
-
-    // populate store and create conversion tables
-    await currencyStore.set(data);
 
     /***
-     * Maintainance Loader
-     */
-    DataController.refreshECBData.subscribe(async (x: number) => {
-      // retrieve rates from ECB
-      const data = await DataController.getData();
+    * Bootstrap Sequence
+    */
+    async init() {
+        
+        try{            
+            /***
+             * LOad ECB Data
+             */
+            await DataController.init();
 
-      // populate store and create conversion tables
-      await currencyStore.set(data);
+            /***
+             * Launch Maintainance Interval
+             * Responsible for daily update
+             */
+            DataController.refreshData();
 
-      console.log('*** Data reloaded');
-    });
-  }
+        }
+        catch(e) {
+            console.log(e);
+        }    
+    }
 }
 
 export const bootstrapController = new BootstrapController();

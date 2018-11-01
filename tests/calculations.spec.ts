@@ -8,10 +8,10 @@ import { isFloat } from "../src/util/decimals";
 before( async() => {
 
 	// retrieve rates from ECB
-	const data = await DataController.getData();
+	const data = await DataController.getECBData();
 
 	// populate store and create conversion tables
-	await currencyStore.set(data);
+    await currencyStore('set', {data});
 
 	// lets do some testing
 	return Promise.resolve();
@@ -34,25 +34,24 @@ describe("Currency Conversion", () => {
 		let err: Error;
 
 		before( async () => {
-			try { result = await A.convert("hello", "eur", "1000"); }
+            try { result = await A.execute ("convert", { currency: "hello", foreign_currency: "eur", amount: "1000"}); }
 			catch(e) { err = e; }
 		});
 		it("should thow an error for invalid base currency",  () => expect(err).to.exist );
 
 		before( async () => {
 			err = undefined;
-			try { result = await A.convert("eur", "hello", "1000"); }
+			try { result = await A.execute ("convert", { currency: "eur", foreign_currency: "hello", amount: "1000"}); }
 			catch(e) { err = e; }
 		});
 		it("should thow an error for invalid target currency",  () => expect(err).to.exist );
 
 		before( async () => {
 			err = undefined;
-			try { result = await A.convert("eur", "hello", "aaaaa"); }
-			catch(e) { err = e; }
+			try { result = await A.execute ("convert", { currency: "eur", foreign_currency: "usd", amount: "aaaa"}); }
+            catch(e) { err = e; }
 		});
 		it("should thow an error for invalid amount",  () => expect(err).to.exist );
-
 	});
 
 	/***
@@ -61,7 +60,7 @@ describe("Currency Conversion", () => {
 	describe( "Foreign Currency to Euros", async () => {
 
 		before( async () => {
-			result = await A.convert("usd", "eur", "1000");
+			result = await A.execute ("convert", { currency: "usd", foreign_currency: "eur", amount: "1000"}); 
 			to = Object.keys(result.rates)[0];
 			from = Object.keys(result.rates)[1];
 		});
@@ -89,7 +88,7 @@ describe("Currency Conversion", () => {
 	describe( "Foreign Currency to Euros", async () => {
 
 		before( async () => {
-			result = await A.convert("eur", "usd", "1000");
+			result = await A.execute ("convert", { currency: "eur", foreign_currency: "usd", amount: "1000"}); 
 			to = Object.keys(result.rates)[0];
 			from = Object.keys(result.rates)[1];
 		});

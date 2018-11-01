@@ -1,4 +1,4 @@
-export interface IRate {
+export interface IConversionTable {
   currency: string;
   rate?: number;
   reverseRate?: number;

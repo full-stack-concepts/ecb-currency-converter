@@ -1,4 +1,6 @@
 {
 	"verbose": false,
-  	"ignore": []  	
+  	"ignore": [
+         "./data" 
+    ]  	
 }
