@@ -47,6 +47,26 @@ export const RELOAD_HOURS = parseInt(process.env['RELOAD_HOURS']);
 export const RELOAD_MINUTES = parseInt(process.env['RELOAD_MINUTES']);
 
 /***
+ * Mail Settings
+ */
+
+ export const MAIL = {
+    APPLICATION_NAME: process.env["APPLICATION_NAME"],
+    SYSTEM_ADMIN_EMAIL: process.env["SYSTEM_ADMIN_EMAIL"],
+    MAIL_SERVICE: process.env['MAIL_SERVICE'],
+    SMTP_HOST_URL: process.env["SMTP_HOST_URL"],
+    SMTP_PORT:  parseInt( process.env["SMTP_PORT"] ),
+    SMTP_AUTH_USER:  process.env["SMTP_AUTH_USER"],
+    SMTP_AUTH_PASSWORD:  process.env["SMTP_AUTH_PASSWORD"],
+    MAILER_DEFAULT_FROM_ADDRESS:  process.env["MAILER_DEFAULT_FROM_ADDRESS"],
+    MAILER_DEFAULT_SENDER_ADDRESS:  process.env["MAILER_DEFAULT_SENDER_ADDRESS"],
+    SMTP_SECURE:  process.env["SMTP_SECURE"] == "boolean",
+    SMTP_IGNORE_TLS:  process.env["SMTP_IGNORE_TLS"] == "boolean",
+    SMTP_REQUIRE_TLS: process.env["SMTP_REQUIRE_TLS"] == "boolean",
+    SEND_MAIL_AFTER_DAILY_UPDATE:  process.env["SEND_MAIL_AFTER_DAILY_UPDATE"] == "boolean",
+ }
+
+/*
  * Checks before bootstrapping application
  */
 if (!EXPRESS_SERVER_MODE) {

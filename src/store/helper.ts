@@ -45,7 +45,7 @@ export class StoreHelper {
 
     private static getSingleCurrency = (entry: any) => entry[Object.keys(entry)[0]].toLowerCase();
 
-    private static calculateReversedRatePerCurrency(_rates: any) {
+    private static calculateReversedRatePerCurrency(_rates: any) {     
     
         return _rates.map((entry: any) => {
             // get conversion rate to euro

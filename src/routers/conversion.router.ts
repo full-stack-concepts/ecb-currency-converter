@@ -27,8 +27,7 @@ class ConversionRouter {
             let result;
             try {
                 const { currency, target_currency, amount } = req.params; 
-                const result = await A.execute ("convert", {currency, target_currency, amount});      
-                // result = await A.convert(currency, target_currency, amount);
+                const result = await A.execute ("convert", {currency, target_currency, amount});                    
                 res.status(200).json(result);
             } catch (e) {
                 next(e);
@@ -41,6 +40,20 @@ class ConversionRouter {
               const result = await A.execute ("hConvert", {date, currency, target_currency, amount});
               res.status(200).json(result);
             } catch(e) { next(e); }
+        });
+
+        this.router.get('/range', async(req: Request, res: Response, next: NextFunction ) => {
+            try {
+                const result = await A.execute("getDateRange", {})
+                res.status(200).json(result);
+            } catch (e) { next(e); }
+        });
+
+        this.router.get('/currencies', async(req: Request, res: Response, next: NextFunction ) => {
+            try {
+                const result = await A.execute("getCurrencies", {})
+                res.status(200).json(result);
+            } catch (e) { next(e); }
         });
     }
 }

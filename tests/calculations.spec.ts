@@ -7,11 +7,10 @@ import { isFloat } from "../src/util/decimals";
 
 before( async() => {
 
-	// retrieve rates from ECB
-	const data = await DataController.getECBData();
-
-	// populate store and create conversion tables
-    await currencyStore('set', {data});
+    /***
+     * LOad ECB Data then populate store
+     */
+    await DataController.init();
 
 	// lets do some testing
 	return Promise.resolve();
@@ -31,40 +30,73 @@ describe("Currency Conversion", () => {
 	 */
 	describe( "Input Errors", () => {
 
-		let err: Error;
+		let err: Error;   
 
 		before( async () => {
-            try { result = await A.execute ("convert", { currency: "hello", foreign_currency: "eur", amount: "1000"}); }
+            try { 
+                result = await A.execute ("convert", { 
+                    currency: "hello", 
+                    target_currency: "eur", 
+                    amount: "1000"}
+                );                           
+            }
+			catch(e) { 
+                err = e;             
+            }
+		});
+
+		it("should thow an error for invalid base currency",  () => expect(result.err).to.exist );
+
+        before( async () => {
+			err = undefined;
+			try { 
+                result = await A.execute ("convert", { 
+                    currency: "eur", 
+                    target_currency: "hello", 
+                    amount: "1000"
+                }); 
+            }
 			catch(e) { err = e; }
 		});
-		it("should thow an error for invalid base currency",  () => expect(err).to.exist );
 
-		before( async () => {
-			err = undefined;
-			try { result = await A.execute ("convert", { currency: "eur", foreign_currency: "hello", amount: "1000"}); }
-			catch(e) { err = e; }
-		});
-		it("should thow an error for invalid target currency",  () => expect(err).to.exist );
+		it("should thow an error for invalid target currency",  () => expect(result.err).to.exist );
 
-		before( async () => {
-			err = undefined;
-			try { result = await A.execute ("convert", { currency: "eur", foreign_currency: "usd", amount: "aaaa"}); }
-            catch(e) { err = e; }
-		});
-		it("should thow an error for invalid amount",  () => expect(err).to.exist );
+        	before( async () => {
+			    err = undefined;
+			    try { result = await A.execute ("convert", { 
+                    currency: "eur", 
+                    target_currency: "usd", 
+                    amount: "aaaa"}); 
+                }
+                catch(e) { err = e; }
+		    });
+
+		it("should thow an error for invalid amount",  () => expect(result.err).to.exist );
+
 	});
 
-	/***
+    /***
 	 * Action: Foreign Currency -> Euro
 	 */
 	describe( "Foreign Currency to Euros", async () => {
 
 		before( async () => {
-			result = await A.execute ("convert", { currency: "usd", foreign_currency: "eur", amount: "1000"}); 
+
+			result = await A.execute ("convert", { 
+                currency: "usd", 
+                target_currency: "eur", 
+                amount: "1000"
+            }); 
+
+            console.log(result)
+
 			to = Object.keys(result.rates)[0];
 			from = Object.keys(result.rates)[1];
 		});
 
+       	it("should run this test ",  () => expect(1).to.equal(1) );
+
+        
 		it("should return a response object with <raw> property",  () => expect(result).to.have.property('raw') );
 		it("should return a response object with <result> property",  () => expect(result).to.have.property('result') );
 		it("should return a response object with <base_currency> property",  () => expect(result).to.have.property('base_currency') );
@@ -78,17 +110,20 @@ describe("Currency Conversion", () => {
 		it("should specify <result> as number",  () => expect(!isNaN(result.amount)).to.equal(true) );
 		it("should specify <conversion rate > to euro as float",  () => expect(isFloat(result.rates[to])).to.equal(true) );
 		it("should specify <conversion rate > from euro as float",  () => expect(isFloat(result.rates[from])).to.equal(true) );
+    });
 
-	});
-
-
-	/***
+    /***
 	 * Action: Foreign Currency -> Euro
 	 */
 	describe( "Foreign Currency to Euros", async () => {
 
 		before( async () => {
-			result = await A.execute ("convert", { currency: "eur", foreign_currency: "usd", amount: "1000"}); 
+			result = await A.execute ("convert", { 
+                currency: "eur", 
+                target_currency: "usd", 
+                amount: "1000"
+            }); 
+
 			to = Object.keys(result.rates)[0];
 			from = Object.keys(result.rates)[1];
 		});
@@ -101,4 +136,6 @@ describe("Currency Conversion", () => {
 		it("should specify <conversion rate > from foreign currency as float",  () => expect(isFloat(result.rates[from])).to.equal(true) );
 
 	});
+
 });
+

@@ -2,14 +2,16 @@ import path from 'path';
 import util from 'util';
 import fs from 'fs';
 import request from 'request-promise';
-import jsonfile from "jsonfile";
-import { Subject, Observable, Subscription, interval } from 'rxjs';
+import { Subject, Observable, Subscription, interval, timer } from 'rxjs';
 import { Parser } from 'xml2js';
 import moment from "moment-timezone";
 const rootPath = require("app-root-path");
 
 import { currencyStore } from '../store/currency.store';
 import { historyStore, historicalStoreData } from '../store/history.store';
+import { EmailController } from "../controllers";
+
+import { validateStoreData, saveHistoricalRates, runTests } from "./helpers";
 
 import { 
     ONLINE_XML_SOURCE, ONLINE_XML_LAST_90_DAYS, STORE_SOURCE_DIRECTORY,
@@ -21,6 +23,14 @@ import {
     setDefaultTimezone, getCurrentTimestamp, getTargetTimestampForTimeZone, getFormattedDate, getOffsetbetweenTimeZones,
     getDateVars, defineTargetTime
 } from "../util/date.functions";
+
+const waitFor = (ms:number) => new Promise(r => setTimeout(r, ms));
+
+const asyncForEach = async (array:any[], callback:Function) => {
+    for (let index = 0; index < array.length; index++) {
+        await callback(array[index], index, array)
+    }
+}
 
 const parser:any = new Parser();
 parser.parseString = util.promisify(parser.parseString);
@@ -45,8 +55,8 @@ export class DataController {
 
     // a little bit of state management
     static loading: boolean = false;
-    static ratesLoaded: boolean;
-    static historicalRatesLoaded: boolean;    
+    static ratesLoaded: boolean = false;
+    static historicalRatesLoaded: boolean = false;
 
     static rates: any[];
 
@@ -56,10 +66,7 @@ export class DataController {
      * Log Critical Error
      * @err:Error
      */
-    static err(err: Error) {
-        console.error(err);
-        process.exit(1);
-    }
+    static err(err: Error) { process.exit(1); }
 
     static get(url:string) {
         return new Promise((resolve, reject) => {
@@ -114,38 +121,12 @@ export class DataController {
             };         
         });   
 
-        await this.saveHistoricalRates(items);  
+        await saveHistoricalRates(items);  
 
         // signal master interval that everything has loaded
         this.historicalRatesLoaded = true;       
 
         return items;
-    }
-
-    static _createFilePath = (date:string):string => {
-        return path.join( 
-            rootPath.path.toString(), 
-            STORE_SOURCE_DIRECTORY, 
-            date.toString()+".json"
-        );
-    }
-
-    static _saveRatesEntryFile = (pathToFile:string, rates:rateEntry[] ) => {
-        if(!fs.existsSync(pathToFile)) {
-            return jsonfile.writeFileSync(pathToFile, { rates: rates});            
-        } else {
-            return;
-        }
-    }
-
-    static async saveHistoricalRates(entries:HistoricalEntry[]) {      
-
-        entries.forEach( ({date,rates}:HistoricalEntry) => {          
-            const pathToFile = this._createFilePath(date);  
-            console.log(date);
-            this._saveRatesEntryFile(pathToFile, rates );
-        });              
-        return Promise.resolve();
     }
 
     /***
@@ -188,18 +169,19 @@ export class DataController {
     }   
 
     static restLoadIndicatorsValues() {
-        this.ratesLoaded = !this.ratesLoaded;
-        this.historicalRatesLoaded = !this.historicalRatesLoaded;
+        this.ratesLoaded = false;
+        this.historicalRatesLoaded = false;
     }
 
-    /***
-     * 
-     */
+    static getPathToDataDir():string { 
+        return path.join( rootPath.path.toString(), STORE_SOURCE_DIRECTORY); 
+    }
+
     static async testInfrastructure():Promise<boolean> {        
-        const dir = path.join( rootPath.path.toString(), STORE_SOURCE_DIRECTORY);
+        const dir = this.getPathToDataDir();
         (!fs.existsSync(dir)) ? fs.mkdirSync(dir) : null;
         return Promise.resolve(true);        
-    }      
+    }    
 
     /***
      * ON INIT
@@ -209,7 +191,10 @@ export class DataController {
         await this.testInfrastructure();
         
         // retrieve current rates from ECB
-        const {currentEntry, historicalEntries}:any = await this.getECBData();           
+        const {currentEntry, historicalEntries}:any = await this.getECBData(); 
+        
+        // return if no data  was retrieved -> sequence runs till data has arrived
+        if(!historicalEntries || !currentEntry) return;      
        
         // populate store and create conversion tables for current rates
         await currencyStore("set", {data: currentEntry} );
@@ -229,17 +214,22 @@ export class DataController {
         return;
     }
 
-    static refreshData() {  
+    static async sendEmail( eventID:string) {
+        const result = await EmailController.exec( "sendSystemEmail", { eventID } );
+        return result;
+    }    
+
+    static async sendErrorEmail( message?: string | Error) {
+        const result = await EmailController.exec( "sendErrorEmail", { message } );
+        return result;
+    }   
+
+    static getSecondsToTargetTime(): number {
 
         let offset: number,
             targetTS: number,
             currentTS: number,
-            TIMER:number,
-            RELOAD_PROCESS:boolean = false;
-
-        this.refreshECBData$.subscribe( async (x: number) => {
-
-            console.log("Maintenance Interval ", x);       
+            timer:number;
 
             // set default timezone          
             // setDefaultTimezone(MY_TIME_ZONE);   
@@ -255,45 +245,82 @@ export class DataController {
             targetTS = defineTargetTime( RELOAD_HOURS, RELOAD_MINUTES, offset );             
 
             // calculate time difference in seconds
-            TIMER = Math.abs(targetTS - currentTS);
+            timer = Math.abs(targetTS - currentTS);
 
-            // try to reload if time difference in seconds in within range of designated interval
-            if( TIMER <= RELOAD_RANGE)  RELOAD_PROCESS = true;
+            return timer;        
+    }
 
-            console.log("*** Should we do something ", TIMER <= RELOAD_RANGE );
+    /***
+     * (1) Reload current and historical data
+     * (2) Validate store data
+     * (3) Run unit tests
+     * @logDate: string
+     */
+    static async reloadECBStore( logDate :string) {
 
-            // reload 
-            if(RELOAD_PROCESS) {
+        let err: Error;
+        try {
+            // load current and historical data
+            await this.init();         
+           
+            /***
+             * Validate stored files        
+             */ 
+            const { hasErrors, message }: any = await validateStoreData();                
+            if(hasErrors) throw new Error("Invalid Store Configuration");
+           
+            /***
+             * Run Unit Tests
+             * Note : yet to implement
+             */ 
+            /*
+            const { failures }: any = await runTests();    
+            if( failures > 0) throw new Error( `Test Error: failures: ${failures}`);         
+            */
 
-                console.log(" *** START DAILY UPDATE PROCESS");    
-
-                // if update is successfull historyStore needs to be updated
-                // for this we shall use an array of dates in historyStore
-                const logDate:string = getFormattedDate();
-
-                const logDates = historicalStoreData.getLogDates();
-
-                const hasCurrentLogDate:boolean = logDates.some( (str:string) => str === logDate);
-
-                console.log("Update has run ", hasCurrentLogDate);
-                
-
-                if(!hasCurrentLogDate) {
-
-                    console.log("*** STart Loading Data");
-                    // load data
-                    await this.init();
-
-                    // update log
-                    historicalStoreData.logDate(logDate);            
-                }
-
-                RELOAD_PROCESS = false;
-                
+            // log date of this updage
+            historicalStoreData.logDate(logDate);                  
+        }
+        catch(e) { 
+            err = e; 
+            console.log("*** Data COntroller ", err, err.message);
+        }
+        finally {
+            if(!err) {
+                await this.sendEmail( "system.data.daily.reload");               
+            } else {                
+                await this.sendErrorEmail( err.message );     
             }
+        }
+    }
 
-            console.log("*** Timer ", TIMER )
-         
+    static evalTargetTime() {
+
+        // get seconds to next update
+        const TIMER: number = this.getSecondsToTargetTime();     
+
+        console.log("*** Timer ", TIMER, "LAUNCH UPDATE ", TIMER <= RELOAD_RANGE );
+
+        // try to reload if time difference in seconds in within range of designated interval
+        if( TIMER <= RELOAD_RANGE) {        
+
+            // if update is successfull historyStore needs to be updated
+            // for this we shall use an array of dates in historyStore
+            const logDate:string = getFormattedDate();
+
+            const logDates = historicalStoreData.getLogDates();
+
+            const hasCurrentLogDate:boolean = logDates.some( (str:string) => str === logDate);                       
+
+            if(!hasCurrentLogDate) { this.reloadECBStore(logDate); }                    
+        }        
+     
+    }
+
+    static refreshData() {      
+
+        this.refreshECBData$.subscribe( async (x: number) => {                                
+            this.evalTargetTime();
         });
     }
 }

@@ -70,9 +70,9 @@ export const getTargetTimestampForTimeZone = (date:string, TZ:string):number => 
     );
 }
 
-export const getFormattedDate= ():string => {
+export const getFormattedDate= (format="YYYY-MM-DD"):string => {
     const ts = Math.round( new Date().getTime() / 1000 );
-    return moment.unix(ts).format("YYYY-MM-DD");   
+    return moment.unix(ts).format(format);      
 }
 
 export const getOffsetbetweenTimeZones = (TZ1:string, TZ2:string): number => {

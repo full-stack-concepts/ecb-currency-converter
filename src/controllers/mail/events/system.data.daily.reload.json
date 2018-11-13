@@ -1,0 +1,5 @@
+{
+	"identifier": "system.data.daily.reload",
+	"subject": "ECB Comversion Rates",
+    "message": "Daily load of Euro foreign exchange reference rates completed.  All currencies quoted against the euro (base currency)."
+}

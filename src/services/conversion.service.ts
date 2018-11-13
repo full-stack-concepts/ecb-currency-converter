@@ -118,11 +118,11 @@ export class ConversionService {
         return { raw, result, cAmount, cRate }
     }
 
-    private formatResponse({ currency, foreign_currency, cAmount, cRate, raw, result}: any) {
+    private formatResponse({ currency, target_currency, cAmount, cRate, raw, result}: any) {
 
         const responseObject = {
             base_currency: currency.toUpperCase(),
-            target_currency: foreign_currency.toUpperCase(),
+            target_currency: target_currency.toUpperCase(),
             amount: cAmount,
             raw: raw,
             result: result,
@@ -131,10 +131,10 @@ export class ConversionService {
         };
 
         // Add rates object only when base currency unequals target currenct
-        if ( currency !== foreign_currency) {
+        if ( currency !== target_currency) {
             responseObject.rates = {
-                [`${currency}->${foreign_currency}`]: cRate.to || 1,
-                [`${foreign_currency}->${currency}`]: cRate.from || 1,
+                [`${currency}->${target_currency}`]: cRate.to || 1,
+                [`${target_currency}->${currency}`]: cRate.from || 1,
             };
         }
 
@@ -144,20 +144,19 @@ export class ConversionService {
     /***
      *
      */
-    public async convert( {currency, foreign_currency, amount}: any ) {        
+    public async convert( {currency, target_currency, amount}: any ) {        
     
         let err: Error, 
             responseObject: any;     
 
-        try {
-
+        try {                      
             // validate query paramns
-            await this.validate(currency, foreign_currency, amount);
+            await this.validate(currency, target_currency, amount);            
 
             const conversionTable: any = this.findConversionTable(currency);
-            const { raw, result, cAmount, cRate } = await this.calculate(currency, foreign_currency, amount, conversionTable )   
+            const { raw, result, cAmount, cRate } = await this.calculate(currency, target_currency, amount, conversionTable )   
 
-            responseObject = this.formatResponse({currency, foreign_currency, cAmount, cRate, raw, result});         
+            responseObject = this.formatResponse({currency, target_currency, cAmount, cRate, raw, result});         
     
         } catch (e) {
             err = e;
@@ -169,20 +168,20 @@ export class ConversionService {
     /***
      * 
      */
-    public async hConvert( {date, currency, foreign_currency, amount}: any) {
+    public async hConvert( {date, currency, target_currency, amount}: any) {
 
         let err:Error,
             responseObject: any;   
         try {    
 
             // validate query paramns
-            await this.hValidate(date, currency, foreign_currency, amount);
+            await this.hValidate(date, currency, target_currency, amount);
 
             const dateEntry = historicalStoreData.dateEntries[date];
             const conversionTable = this.findConversionTablePerDateEntry(dateEntry, currency);
-            const { raw, result, cAmount, cRate } = await this.calculate(currency, foreign_currency, amount, conversionTable )   
+            const { raw, result, cAmount, cRate } = await this.calculate(currency, target_currency, amount, conversionTable )   
 
-            responseObject = this.formatResponse({currency, foreign_currency, cAmount, cRate, raw, result});
+            responseObject = this.formatResponse({currency, target_currency, cAmount, cRate, raw, result});
        
         } catch (e) {
             err = e;
@@ -194,6 +193,10 @@ export class ConversionService {
             }) : (responseObject);
         }
      }
+
+    public async getDateRange() { return { dates: historicalStoreData.dates}; }
+
+    public async getCurrencies() { return { currencies: this.currencies}; }
 }
 
 export class A {

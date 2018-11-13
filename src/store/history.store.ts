@@ -149,29 +149,12 @@ export class HistoryStore {
         // assign generated data to store
         historicalStoreData.dateEntries = d;
         historicalStoreData.dates = dates;
-    }
+    }   
 
-    public async set( { currencies, historicalEntries}: any): Promise<void> {
+    public async set( { currencies, historicalEntries}: any): Promise<void> {     
 
         // assign currencies to historical Store 
-        historicalStoreData.currencies = currencies;         
-
-       const saveHistoricalEntriesToStoreInMemory = (dateEntryObjects:any[]): void => {
-
-            // Convert to Object with date as associative property
-            let d:Object = {};
-            let dates:string[] = [];
-            dateEntryObjects.forEach ( (entryObject:any, index:number) => {                
-                const {date} = entryObject;
-                delete entryObject.date;        
-                d[date] = entryObject;
-                dates.push(date);                                 
-            });   
-
-            // assign generated data to store
-            historicalStoreData.dateEntries = d;
-            historicalStoreData.dates = dates;
-       }
+        historicalStoreData.currencies = currencies;                
 
        /***
         * Build Date Entry Lookup objects
@@ -182,7 +165,7 @@ export class HistoryStore {
        await this.saveHistoricalEntriesToDisk(dateEntryObjects, 25);  
 
        // add results to store  
-       saveHistoricalEntriesToStoreInMemory(dateEntryObjects);
+       this.saveHistoricalEntriesToStoreInMemory(dateEntryObjects);
 
        return Promise.resolve();
     }    

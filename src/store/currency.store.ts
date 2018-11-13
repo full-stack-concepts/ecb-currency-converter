@@ -64,7 +64,7 @@ export class Store {
      */
     public set( {data}: any) {           
 
-        let err: Error;
+        let err: Error;      
 
         try {            
             // build currencies array from raw data
@@ -76,7 +76,7 @@ export class Store {
             // set store value: currencies
             storeData.currencies = currencies;           
 
-            storeData.conversionTables = StoreHelper.buildConversionTablesForDateEntry( data, currencies)           
+            storeData.conversionTables = StoreHelper.buildConversionTablesForDateEntry( data, currencies);       
             
         } catch (e) {
             err = e;

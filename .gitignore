@@ -23,7 +23,7 @@ coverage
 *.nyc_output
 
 # API keys and secrets
-.env
+/env/**
 # Ignore env directory
 
 
@@ -55,3 +55,5 @@ config/certificates/*
 
 # public directories
 public/*
+
+
